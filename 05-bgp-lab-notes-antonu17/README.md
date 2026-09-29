@@ -1,8 +1,14 @@
 # BGP Lab Notes (antonu17)
 
-When I was studying for my CCNA, where BGP was concerned, the curriculum basically taught me 1) it's an **external routing protocol** or the **path-vector** type, 2) it has powered the internet since ~1994, 3) it's complex and beyond the scope of the CCNA. The suspsense has been killing me, so I decided to learn what it's about.
+When I was studying for my CCNA, where BGP was concerned, the curriculum basically taught me:
 
-First, I used APNIC Academy's [Introduction to BGP](https://academy.apnic.net/en/course/introduction-to-bgp) to get a handle on the basics. Then, I discovered a [GitHub repo](https://github.com/antonu17/lab-network-bgp) by Anton Ustyuzhanin that offers some guided configuration and troubleshooting tasks in a topology with three transit provider and two datacenter ASes; its description was:
+1. it's an **external routing protocol** of the **path-vector** type,
+2. it has powered the internet since ~1994,
+3. it's complex and beyond the scope of the CCNA.
+
+The suspense has been killing me, so I decided to learn what it's about.
+
+First, I used APNIC Academy's [Introduction to BGP](https://academy.apnic.net/en/course/introduction-to-bgp) to get a handle on the basics. Then, I discovered a [GitHub repo](https://github.com/antonu17/lab-network-bgp) by Anton Ustyuzhanin that offers some premade configuration and troubleshooting tasks in a topology with three transit provider and two datacenter ASes; its description was:
 
 > Ever wanted to learn BGP? Kickstart your journey with this interactive Lab and Practical Tasks!
 
@@ -26,7 +32,7 @@ _Graphic by [Anton Ustyuzhanin](https://github.com/antonu17), the creator of thi
 
 First, I want to see the problem for myself. `docker exec -it clab-bgp-router1.dc1 vtysh`. Poking around a bit, FRR/vtysh feels similar to Cisco IOS. Let's see what we're advertising to AS101:
 
-```cisco
+```
 router1.dc1# show bgp ipv4 neighbors 10.101.1.1 advertised-routes
 BGP table version is 100, local router ID is 10.1.254.1, vrf id 0
 Default local pref 100, local AS 1443
@@ -65,7 +71,7 @@ Can confirm, every loopback and transit link in the data center is being adverti
 
 Next, I poked around the running config (vtysh doesn't support `| section`; that's annoying): the lab designer assigned the neighbor links to a peer group `TRANS` which is assigned to a route map that advertises all routes; however, the two neighbor IPs are assigned to a more specific route map that I suspect is _supposed to be_ in charge of limiting the routes to be advertised.
 
-```cisco
+```
 router bgp 1443
  bgp router-id 10.1.254.1
  ...
@@ -88,7 +94,7 @@ router bgp 1443
 
 So let's take a look at AS101_OUT and AS102_OUT and associated prefix-lists:
 
-```cisco
+```
 !
 ip prefix-list DC_SUBNETS seq 5 permit 10.1.0.0/16 le 32
 ip prefix-list DC_SUBNETS seq 10 permit 111.11.0.0/16 le 32
@@ -131,7 +137,7 @@ The topology diagram says that AS102 is the less preferred link; here I can see 
 
 **But more to the task at hand,** I see that they're all using the same prefix-list, and the prefix lists are configured much too broadly--they're explicitly advertising subnets up to /32 for IPv4 and /128 for IPv6. Let's fix that by tightening up those prefix-lists, and clear the process with `soft out` so that the connection doesn't flap.
 
-```cisco
+```
 router1.dc1# conf t
 router1.dc1(config)# ip prefix-list DC_SUBNETS seq 5 permit 10.1.0.0/16 le 24
 router1.dc1(config)# ip prefix-list DC_SUBNETS seq 10 permit 111.11.0.0/16 le 24
@@ -146,7 +152,7 @@ router1.dc1# clear bgp * soft out
 
 And let's see if it worked:
 
-```cisco
+```
 router1.dc1# show bgp ipv4 neighbors 10.101.1.1 advertised-routes
  ...
      Network          Next Hop            Metric LocPrf Weight Path
@@ -177,7 +183,7 @@ _Actually, I got ahead of myself here, and had to undo the above, since this is 
 
 First, let's verify the problem:
 
-```cisco
+```
 router1.dc2# show bgp peer TRANS
 
 BGP peer-group TRANS
@@ -202,7 +208,7 @@ router1.dc2# show bgp ipv4 nei 10.102.6.1 ad
 
 Yes, the AS-paths have private ASNs (>= 64512). A quick google search shows that there is a neighbor option `remove-private-AS`--maybe this will be an (almost) one-liner?
 
-```cisco
+```
 router1.dc2# conf t
 router1.dc2(config)# router bgp 1443
 router1.dc2(config-router)# address-family ipv4
@@ -227,7 +233,7 @@ Almost! By default, `remove-private-AS` stops removing private ASNs once it enco
 
 There's a solution to this: `remove-private-AS all`. This removes private ASNs regardless of where they occur in the path. This option comes with caveats, but none of them apply here--in this topology, there are no public ASes on the other side of my private ASes, and there never will be. So let's try again:
 
-```cisco
+```
 router1.dc2# conf t
 router1.dc2(config)# router bgp 1443
 router1.dc2(config-router)# address-family ipv4
@@ -256,7 +262,7 @@ Now our path is clean!
 
 #### Process
 
-Without access to transit provider configuration, and since the lab transit providers doesn't have communities set up that allow me to request a local_pref, my best bet is probably just to do some prepending to the AS_paths. (MED almost could be an option here since both DCs share the same ASN, but since MED is non-transitive, it wouldn't be able to pass through all the transit providers. Besides [all the other caveats with MED](https://ine.com/blog/2011-10-12-understanding-bgp-med-and-bgp-deterministic-med)).
+Without access to transit provider configuration, and since the lab transit providers doen't have communities set up that allow me to request a local_pref, my best bet is probably just to do some prepending to the AS_paths. (MED almost could be an option here since both DCs share the same ASN, but since MED is non-transitive, it wouldn't be able to pass through all the transit providers. Besides [all the other caveats with MED](https://ine.com/blog/2011-10-12-understanding-bgp-med-and-bgp-deterministic-med)).
 
 Studying the [topology diagram](https://raw.githubusercontent.com/antonu17/lab-bgp-anycast/refs/heads/main/diagram-details.drawio.svg), and based on information gathered earlier in task 1:
 
@@ -292,7 +298,7 @@ The prompt also says _"Ensure that requests from AS 101 customers to the same ne
 
 This only needs to be applied to the 2.2.2.0/24 subnet. AFAIK, there isn't a clean way to do this additively in FRR (i.e. follow the existing process; then, if it's 2.2.2.0/24, prepend two more times). So I will need to make a prefix-list containing only 2.2.2.0/24, have my route maps match this list earlier than the currently used one, and apply all the prepends at once.
 
-```cisco
+```
 router1.dc1# conf t
 router1.dc1(config)# ip prefix-list UNPREFERRED_SUBNETS seq 10 permit 2.2.2.0/24
 router1.dc1(config)# route-map AS101_OUT permit 5
@@ -308,7 +314,7 @@ router1.dc1# clear bgp * soft out
 
 For lab purposes, I can verify path selection in AS 101 and 102 by remoting into a router in each and checking paths.
 
-```cisco
+```
 router3.as102# show bgp ipv4 2.2.2.0/24
 BGP routing table entry for 2.2.2.0/24, version 158
 Paths: (1 available, best #1, table default)
@@ -352,7 +358,7 @@ Looks good. AS101 does not have multipath enabled and is preferring DC1 even tho
 
 I can also log into the "eyeball" in those ASes and curl those anycast IPs since those endpoints are running a webserver that prints their hostnames.
 
-```bash
+```
 # In AS 102, curls to 1.1.1.1 should split between DC1 and DC2.
 
 root@eyeball:/# for i in {1..10}; do curl --local-port 50000-60000 -s http://1.1.1.1/ ; done
@@ -430,7 +436,7 @@ I will make the change to LOCAL_PREF on the router that receives the route, that
 
 First, I need to see how the IPv4 AF is configured to use route maps to begin with:
 
-```cisco
+```
 router2.as102# show run
 ...
  !
@@ -446,7 +452,7 @@ router2.as102# show run
 
 The two route maps seen above are the only two globally configured on the router. So I will need to make a new route map that matches 1.1.1.0/24 and applies LOCAL_PREF, and then lets everything else in; then apply that to the relevant neighbor.
 
-```cisco
+```
 router2.as102# conf t
 router2.as102(config)# ip prefix-list PREFERRED_SUBNETS seq 10 permit 1.1.1.0/24
 router2.as102(config)# route-map AS103_IN permit 10
@@ -478,7 +484,7 @@ router1.as102(config-router-af)# end
 
 And finally, a `show` command to verify the new preferences:
 
-```cisco
+```
 router1.as102# show bgp ipv4 1.1.1.0/24
 BGP routing table entry for 1.1.1.0/24, version 136
 Paths: (3 available, best #1, table default)
@@ -521,7 +527,7 @@ AFAIK, the only solution given the constraints is to advertise more specific, lo
 
 The servers and routers in this part of the data center use BIRD instead of FRR, so I will be doing this config with iproute2.
 
-```bash
+```
 root@server3:/# ip a add dev lo 222.22.1.0/25
 root@server3:/# ip a add dev lo 222.22.1.128/25
 root@server3:/# ip -br -d a
@@ -532,7 +538,7 @@ eth1@if508       UP             10.2.5.2/30 fc00:dc2::5:2/126 fe80::a8c1:abff:fe
 
 Verify the routes are being advertised:
 
-```bash
+```
 root@server3:/# birdc show route export router2
 BIRD 2.0.12 ready.
 Table master4:
@@ -572,7 +578,7 @@ fc00:22:1::/64       unicast [direct1 2026-09-26] * (240)
 
 Finally, I will do another curl check from AS 102 eyeball--requests to 222.22.3.1 should split between servers 2 and 3, but requests to 222.22.1.1 should all go to server 3.
 
-```bash
+```
 root@eyeball:/# for i in {1..10}; do curl --local-port 50000-60000 -s http://222.22.3.1/ ; done
 server2.dc2
 server3.dc2
@@ -609,7 +615,7 @@ Task complete!
 
 This one I accidentally solved earlier in my ~~strikethrough~~ on Task 1--all I need to do is remove that network from the prefix-list that is advertised out of DC1's edge router.
 
-```cisco
+```
 router1.dc1# show run
 ...
 !
@@ -626,7 +632,7 @@ router1.dc1(config)# end
 
 Verify that 111.11.1.0/24 is no longer being advertised:
 
-```cisco
+```
 router1.dc1# show bgp ipv4 neighbors 10.101.1.1 ad
 ...
      Network          Next Hop            Metric LocPrf Weight Path
@@ -636,7 +642,7 @@ router1.dc1# show bgp ipv4 neighbors 10.101.1.1 ad
 
 And why not check pings from the eyeball in as102 while I'm at it?
 
-```bash
+```
 root@eyeball:/# ping 222.22.1.1 -c 4
 PING 222.22.1.1 (222.22.1.1) 56(84) bytes of data.
 64 bytes from 222.22.1.1: icmp_seq=1 ttl=59 time=0.118 ms
@@ -656,7 +662,7 @@ PING 111.11.1.1 (111.11.1.1) 56(84) bytes of data.
 
 _Honestly, that's not what I expected - I expected "unreachable." I logged into router3.as102 and saw it still had a default route through the containerlab management interface. For lab purposes this route probably shouldn't be in the same routing table, so I deleted it. Now the pings look the way I expected:_
 
-```bash
+```
 root@eyeball:/# ping 111.11.1.1 -c 4
 PING 111.11.1.1 (111.11.1.1) 56(84) bytes of data.
 From 192.168.102.1 icmp_seq=1 Destination Net Unreachable
@@ -684,28 +690,28 @@ These routers use BIRD instead of FRR. It took me a bit to get my bearings, but 
 # excerpt
 
 protocol bgp router1 {
-        local 10.1.8.2 as 65100;
-        neighbor 10.1.8.1 as 1443;
-        ipv4 {
-                export filter {
-			if net = 1.1.1.0/24 then {
-				bgp_med = 5;
-				accept;
-			}
+  local 10.1.8.2 as 65100;
+  neighbor 10.1.8.1 as 1443;
+  ipv4 {
+    export filter {
+      if net = 1.1.1.0/24 then {
+        bgp_med = 5;
+        accept;
+      }
 
-			if net = 2.2.2.0/24 then {
-				bgp_med = 10;
-				accept;
-			}
+      if net = 2.2.2.0/24 then {
+        bgp_med = 10;
+        accept;
+      }
 
-			accept;
-		};
-                import all;
-        };
-        ipv6 {
-                export all;
-                import all;
-        };
+      accept;
+    };
+    import all;
+  };
+  ipv6 {
+    export all;
+    import all;
+  };
 }
 ```
 
@@ -716,7 +722,7 @@ From router1.dc1 (the edge router), I can verify that the correct path is being 
 - 1.1.1.0/24 should be routed through router2 (10.1.8.2)
 - 2.2.2.0/24 should be routed through router3 (10.1.9.2)
 
-```cisco
+```
 router1.dc1# show bgp ipv4 1.1.1.0/24
 BGP routing table entry for 1.1.1.0/24, version 276
 Paths: (4 available, best #1, table default)
