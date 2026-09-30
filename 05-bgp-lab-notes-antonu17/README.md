@@ -20,9 +20,27 @@ The instructions said to document my process; the purpose of this README is to d
 
 _Graphic by [Anton Ustyuzhanin](https://github.com/antonu17), the creator of this lab. [[Source](https://github.com/antonu17/lab-network-bgp/blob/main/Topology.md)]_
 
-## Configuration Tasks
+## Task Index
 
-**Jump to Task**: [Task 1](#task-1) - [Task 2](#task-2) - [Task 3](#task-3) - [Task 4](#task-4) - [Task 5](#task-5) - [Task 6](#task-6) - [Task 7](#task-7)
+- **Configuration Tasks**
+  - [Task 1](#task-1)
+  - [Task 2](#task-2)
+  - [Task 3](#task-3)
+  - [Task 4](#task-4)
+  - [Task 5](#task-5)
+  - [Task 6](#task-6)
+  - [Task 7](#task-7)
+- **Troubleshooting Tasks**
+  - [Task 1](#task-1-1)
+  - [Task 2](#task-2-1)
+  - [Task 3](#task-3-1)
+  - [Task 4](#task-4-1)
+  - [Task 5](#task-5-1)
+  - [Task 6](#task-6-1)
+  - [Task 7](#task-7-1)
+  - [Task 8](#task-8)
+
+## Configuration Tasks
 
 ### Task 1
 
@@ -171,7 +189,7 @@ Much better! `show bgp ipv6 neighbors 10.101.1.1 advertised-routes` shows that i
 
 _Actually, I got ahead of myself here, and had to undo the above, since this is relevant to tasks 5 and 6._
 
-[Back to Tasks](#tasks)
+[Back to Task Index](#task-index)
 
 ---
 
@@ -251,7 +269,7 @@ router1.dc2# show bgp ipv4 nei 10.102.6.1 ad
 
 Now our path is clean!
 
-[Back to Tasks](#tasks)
+[Back to Task Index](#task-index)
 
 ---
 
@@ -261,7 +279,7 @@ Now our path is clean!
 
 #### Process
 
-Without access to transit provider configuration, and since the lab transit providers doen't have communities set up that allow me to request a local_pref, my best bet is probably just to do some prepending to the AS_paths. (MED almost could be an option here since both DCs share the same ASN, but since MED is non-transitive, it wouldn't be able to pass through all the transit providers. Besides [all the other caveats with MED](https://ine.com/blog/2011-10-12-understanding-bgp-med-and-bgp-deterministic-med)).
+Without access to transit provider configuration, and since the lab transit providers don't have communities set up that allow me to request a local_pref, my best bet is probably just to do some prepending to the AS_paths. (MED almost could be an option here since both DCs share the same ASN, but since MED is non-transitive, it wouldn't be able to pass through all the transit providers. Besides [all the other caveats with MED](https://ine.com/blog/2011-10-12-understanding-bgp-med-and-bgp-deterministic-med)).
 
 Studying the [topology diagram](https://raw.githubusercontent.com/antonu17/lab-bgp-anycast/refs/heads/main/diagram-details.drawio.svg), and based on information gathered earlier in task 1:
 
@@ -417,7 +435,7 @@ server1.dc1
 
 I'll call it a win!
 
-[Back to Tasks](#tasks)
+[Back to Task Index](#task-index)
 
 ---
 
@@ -503,7 +521,7 @@ Paths: (3 available, best #1, table default)
 
 Success!
 
-[Back to Tasks](#tasks)
+[Back to Task Index](#task-index)
 
 ---
 
@@ -602,7 +620,7 @@ server3.dc2
 
 Task complete!
 
-[Back to Tasks](#tasks)
+[Back to Task Index](#task-index)
 
 ---
 
@@ -668,7 +686,7 @@ From 192.168.102.1 icmp_seq=3 Destination Net Unreachable
 From 192.168.102.1 icmp_seq=4 Destination Net Unreachable
 ```
 
-[Back to Tasks](#tasks)
+[Back to Task Index](#task-index)
 
 ---
 
@@ -766,7 +784,7 @@ Paths: (4 available, best #1, table default)
 
 All tasks complete!
 
-[Back to Tasks](#tasks)
+[Back to Task Index](#task-index)
 
 ---
 
@@ -869,6 +887,8 @@ It took some time for retry timers to expire, etc.; but now peering is establish
 
 _At this point, I entered an eyeball in AS103 to see if server1.dc2 would respond to 1.1.1.1. Traffic actually wasn't routed to DC2 at all, only DC1. I suspect that this may be a topic of a later task, so I'm going to leave it for now._
 
+[Back to Task Index](#task-index)
+
 ---
 
 ### Task 2
@@ -922,6 +942,8 @@ rtt min/avg/max/mdev = 0.076/0.106/0.137/0.030 ms
 
 Solved!
 
+[Back to Task Index](#task-index)
+
 ---
 
 ### Task 3
@@ -963,6 +985,8 @@ default via 172.20.20.1 dev eth0
 So the only thing I can think of that might be causing this hypothetical problem is that maybe all the hypothetical HTTP requests are originating from the same source port? Usually, multipath uses a hashing algorithm on source/destination IPs and ports in order to keep any single connection using the same path stably--this would be a feature, not a bug. Since the task is hypothetical and there aren't any real applications that are overloading "the same server" that can be tweaked, I'm not sure what else to investigate.
 
 Ticket closed I guess?
+
+[Back to Task Index](#task-index)
 
 ---
 
@@ -1034,6 +1058,8 @@ router3    BGP        ---        up     02:28:58.176  Established
 
 Task complete!
 
+[Back to Task Index](#task-index)
+
 ---
 
 ### Task 5
@@ -1073,6 +1099,8 @@ fc00:aa::/48 proto bird metric 32 pref medium
 	nexthop via fc00:dc2::4:2 dev eth2 weight 1
 	nexthop via fc00:dc2::6:2 dev eth3 weight 1
 ```
+
+[Back to Task Index](#task-index)
 
 ---
 
@@ -1188,6 +1216,8 @@ fc00:22:3::/64 dev lo proto kernel metric 256 pref medium
 
 I will remember this pattern for next time!
 
+[Back to Task Index](#task-index)
+
 ---
 
 ### Task 7
@@ -1245,6 +1275,8 @@ Paths: (2 available, best #1, table default)
 ```
 
 Now requests to 2.2.2.2 will go to the closest datacenter. Sorry DC1.
+
+[Back to Task Index](#task-index)
 
 ---
 
@@ -1358,3 +1390,5 @@ Paths: (1 available, best #1, table default)
 ```
 
 All tasks completed!
+
+[Back to Task Index](#task-index)
