@@ -2,7 +2,11 @@
 
 A couple of weeks before I took the CCNA last May, I did [Jeremy's IT Lab's](https://www.jeremysitlab.com/) Mega Lab in Packet Tracer. It was great practice, and a great lab, except for Packet Tracer getting more and more unusable for crashing the closer I got to the end. So I'm thinking, why not try to reproduce most of it in containerlab?
 
-I have used this lab setup as a crash course in Ansible.
+This project is a containerlab-based recreation of Jeremy's IT Lab's CCNA Mega Lab. The goal was to reproduce the lab's networking functionality as closely as practical using containerlab, Arista cEOS, Cisco vIOS where necessary, and lightweight Linux containers for services that Packet Tracer provides natively.
+
+This project also served as a crash course for myself in Ansible. The network is deployed and configured through working Ansible playbooks covering VLANs, Layer 2 and Layer 3 EtherChannel, FHRPs, STP, OSPF, DHCP, DNS, NTP, ACLs, Layer 2 security, and related services. Because the original lab targets Cisco IOS and Packet Tracer, some features were substituted or omitted where containerlab, cEOS, or the available Linux containers could not reproduce them directly. The implementation notes below document those differences rather than attempting to hide them.
+
+A disclaimer: the playbooks are organized around the sequential steps of the original Packet Tracer lab, so some configuration is more procedural than a better, fully declarative design would be. In several places, however, the project does use generated variables, resource modules, templates, and shared state to derive configuration rather than hard-coding the final device state. Improving the project toward a more declarative desired-state model would be a natural next step.
 
 ![Topology Diagram](diagram.png)
 

@@ -171,6 +171,14 @@
         "y": 520
       },
       "icon": "server"
+    },
+    {
+      "id": "INTERNET",
+      "icon": "cloud",
+      "position": {
+        "x": 120,
+        "y": 0
+      }
     }
   ],
   "edgeAnnotations": [],
